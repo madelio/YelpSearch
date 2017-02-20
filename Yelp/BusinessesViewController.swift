@@ -8,22 +8,29 @@
 
 import UIKit
 
-class BusinessesViewController: UIViewController, UITableViewDataSource, UITableViewDelegate, UISearchBarDelegate {
+class BusinessesViewController: UIViewController, UITableViewDataSource, UITableViewDelegate, UISearchBarDelegate, UIScrollViewDelegate {
     
     @IBOutlet weak var tableView: UITableView!
     var businesses: [Business]!
-
-    @IBOutlet weak var searchBar: UISearchBar!
+    
+    var offset = 0;
+    var isMoreDataLoading = false
+    var searchBarItem: UISearchBar!
     
     var filteredData: [Business]!
+    
     
     override func viewDidLoad() {
         super.viewDidLoad()
         
+        searchBarItem = UISearchBar()
+        searchBarItem.sizeToFit()
         
+        navigationItem.titleView = searchBarItem
+
+        searchBarItem.delegate = self
         tableView.delegate = self
         tableView.dataSource = self
-        searchBar.delegate = self
         
         // use whatever the constraint rules tell you to do
         tableView.rowHeight = UITableViewAutomaticDimension
@@ -31,7 +38,7 @@ class BusinessesViewController: UIViewController, UITableViewDataSource, UITable
         // used in conjunction with above code, scroll height dimension
         tableView.estimatedRowHeight = 120
         
-        Business.searchWithTerm(term: "Thai", completion: { (businesses: [Business]?, error: Error?) -> Void in
+        Business.searchWithTerm(term: "Thai", offset: offset, completion: { (businesses: [Business]?, error: Error?) -> Void in
             
             self.businesses = businesses
             self.filteredData = businesses
@@ -92,13 +99,66 @@ class BusinessesViewController: UIViewController, UITableViewDataSource, UITable
         filteredData = searchText.isEmpty ? businesses! : businesses.filter { (item: Business) -> Bool in
             // If dataItem matches the searchText, return true to include it
             
-            
             return ((item.name?.range(of: searchText, options: .caseInsensitive, range: nil, locale: nil)) != nil)
             
         }
         
         tableView.reloadData()
         
+    }
+    
+    func searchBarTextDidBeginEditing(_ searchBar: UISearchBar) {
+        self.searchBarItem.showsCancelButton = true
+    }
+    
+    func searchBarCancelButtonClicked(_ searchBar: UISearchBar) {
+        searchBarItem.showsCancelButton = false
+        searchBarItem.text = ""
+        searchBarItem.resignFirstResponder()
+    }
+    
+    func loadMoreData() {
+        
+        offset = offset + 20
+        
+        Business.searchWithTerm(term: "Thai", offset: offset, completion: { (businesses: [Business]?, error: Error?) -> Void in
+            
+            self.businesses = businesses
+            self.filteredData = businesses
+            
+            self.isMoreDataLoading = false
+            
+            self.tableView.reloadData()
+            
+            
+            if let businesses = businesses {
+                for business in businesses {
+                    print(business.name!)
+                    print(business.address!)
+                }
+            }
+        })
+    }
+    
+    func scrollViewDidScroll(_ scrollView: UIScrollView) {
+        if (!isMoreDataLoading) {
+            // Calculate the position of one screen length before the bottom of the results
+            let scrollViewContentHeight = tableView.contentSize.height
+            let scrollOffsetThreshold = scrollViewContentHeight - tableView.bounds.size.height
+            
+            // When the user has scrolled past the threshold, start requesting
+            if(scrollView.contentOffset.y > scrollOffsetThreshold && tableView.isDragging) {
+                isMoreDataLoading = true
+                
+                // Code to load more results
+                loadMoreData()
+                
+                // ... Code to load more results ...
+            }
+            
+            // ... Code to load more results ...
+            
+        }
     }
     /*
      // MARK: - Navigation
