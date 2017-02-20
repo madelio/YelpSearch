@@ -8,25 +8,44 @@
 
 import UIKit
 
-class BusinessesViewController: UIViewController {
+class BusinessesViewController: UIViewController, UITableViewDataSource, UITableViewDelegate, UISearchBarDelegate {
     
+    @IBOutlet weak var tableView: UITableView!
     var businesses: [Business]!
+
+    @IBOutlet weak var searchBar: UISearchBar!
+    
+    var filteredData: [Business]!
     
     override func viewDidLoad() {
         super.viewDidLoad()
         
+        
+        tableView.delegate = self
+        tableView.dataSource = self
+        searchBar.delegate = self
+        
+        // use whatever the constraint rules tell you to do
+        tableView.rowHeight = UITableViewAutomaticDimension
+        
+        // used in conjunction with above code, scroll height dimension
+        tableView.estimatedRowHeight = 120
+        
         Business.searchWithTerm(term: "Thai", completion: { (businesses: [Business]?, error: Error?) -> Void in
             
             self.businesses = businesses
+            self.filteredData = businesses
+            
+            self.tableView.reloadData()
+            
+            
             if let businesses = businesses {
                 for business in businesses {
                     print(business.name!)
                     print(business.address!)
                 }
             }
-            
-            }
-        )
+        })
         
         /* Example of Yelp search with more search options specified
          Business.searchWithTerm("Restaurants", sort: .Distance, categories: ["asianfusion", "burgers"], deals: true) { (businesses: [Business]!, error: NSError!) -> Void in
@@ -46,6 +65,41 @@ class BusinessesViewController: UIViewController {
         // Dispose of any resources that can be recreated.
     }
     
+    func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
+        if filteredData != nil {
+            return filteredData!.count
+        } else {
+            return 0
+        }
+    }
+    
+    func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
+        
+        let cell = tableView.dequeueReusableCell(withIdentifier: "BusinessCell", for: indexPath) as! BusinessCell
+        
+        cell.business = filteredData[indexPath.row]
+        
+        return cell
+    }
+    
+    // This method updates filteredData based on the text in the Search Box
+    func searchBar(_ searchBar: UISearchBar, textDidChange searchText: String) {
+        // When there is no text, filteredData is the same as the original data
+        // When user has entered text into the search box
+        // Use the filter method to iterate over all items in the data array
+        // For each item, return true if the item should be included and false if the
+        // item should NOT be included
+        filteredData = searchText.isEmpty ? businesses! : businesses.filter { (item: Business) -> Bool in
+            // If dataItem matches the searchText, return true to include it
+            
+            
+            return ((item.name?.range(of: searchText, options: .caseInsensitive, range: nil, locale: nil)) != nil)
+            
+        }
+        
+        tableView.reloadData()
+        
+    }
     /*
      // MARK: - Navigation
      
