@@ -38,10 +38,13 @@ class BusinessesViewController: UIViewController, UITableViewDataSource, UITable
         // used in conjunction with above code, scroll height dimension
         tableView.estimatedRowHeight = 120
         
-        Business.searchWithTerm(term: "Thai", offset: offset, completion: { (businesses: [Business]?, error: Error?) -> Void in
+        Business.searchWithTerm(term: "Thai", offset: 0, completion: { (businesses: [Business]?, error: Error?) -> Void in
             
             self.businesses = businesses
             self.filteredData = businesses
+            
+            self.searchBarItem.backgroundColor = UIColor(red: 210, green: 0, blue: 0, alpha: 0.0);
+            self.navigationController?.navigationBar.barTintColor = UIColor(red: 210, green: 0, blue: 0, alpha: 0.3);
             
             self.tableView.reloadData()
             
@@ -89,6 +92,11 @@ class BusinessesViewController: UIViewController, UITableViewDataSource, UITable
         return cell
     }
     
+    func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
+        tableView.deselectRow(at: indexPath, animated: true)
+        
+    }
+    
     // This method updates filteredData based on the text in the Search Box
     func searchBar(_ searchBar: UISearchBar, textDidChange searchText: String) {
         // When there is no text, filteredData is the same as the original data
@@ -120,18 +128,26 @@ class BusinessesViewController: UIViewController, UITableViewDataSource, UITable
     func loadMoreData() {
         
         offset = offset + 20
+        print(offset)
         
-        Business.searchWithTerm(term: "Thai", offset: offset, completion: { (businesses: [Business]?, error: Error?) -> Void in
+        
+        Business.searchWithTerm(term: "Thai", offset: offset, completion: { (results: [Business]?, error: Error?) -> Void in
             
-            self.businesses = businesses
-            self.filteredData = businesses
+            //self.businesses += results;
+            //self.filteredData =
             
+            if results != nil {
+                for result in results! {
+                    self.businesses.append( result)
+                    self.filteredData.append( result)
+                }
+            }
             self.isMoreDataLoading = false
             
             self.tableView.reloadData()
             
             
-            if let businesses = businesses {
+            if let businesses = self.businesses {
                 for business in businesses {
                     print(business.name!)
                     print(business.address!)
@@ -152,11 +168,7 @@ class BusinessesViewController: UIViewController, UITableViewDataSource, UITable
                 
                 // Code to load more results
                 loadMoreData()
-                
-                // ... Code to load more results ...
             }
-            
-            // ... Code to load more results ...
             
         }
     }
